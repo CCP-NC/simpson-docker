@@ -20,9 +20,19 @@ docker run -v $(pwd):/workspace jkshenton/simpson simpson test.in
 
 # Using Podman
 podman run -v $(pwd):/workspace jkshenton/simpson simpson test.in
+``` 
+
+## Instructions for Windows Users
+
+When using PowerShell, replace $(pwd) with ${PWD} or use an absolute path.
+
+```powershell
+# Pull the image from Docker Hub
+docker pull jkshenton/simpson
+
+# Run using Docker in PowerShell
+docker run -v ${PWD}:/workspace jkshenton/simpson simpson test.in
 ```
-
-
 
 ## Building and running the container locally
 
