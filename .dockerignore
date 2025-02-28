@@ -1,0 +1,43 @@
+# Git
+.git
+.gitignore
+.github
+
+# Editor directories and files
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Build artifacts and dependencies
+node_modules
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+build
+dist
+*.so
+*.o
+*.a
+*.class
+target/
+*.log
+
+# Docker files
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Environment and secrets
+.env
+.env.*
+*.pem
+*.key
+secrets/
+
+# Documentation and tests
+*.md
+!README.md
