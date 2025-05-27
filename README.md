@@ -34,6 +34,31 @@ docker pull jkshenton/simpson
 docker run -v ${PWD}:/workspace jkshenton/simpson simpson test.in
 ```
 
+## Using with Singularity/Apptainer
+
+On HPC systems where Singularity/Apptainer is available, you can use this container in several ways:
+
+### Pull directly from Docker Hub
+```bash
+# Convert Docker image to Singularity image
+singularity pull simpson.sif docker://jkshenton/simpson
+
+# Or with newer Apptainer syntax
+apptainer pull simpson.sif docker://jkshenton/simpson
+```
+
+### Running with Singularity/Apptainer
+```bash
+# The current directory is automatically mounted
+singularity run simpson.sif simpson test.in
+
+# Or with newer Apptainer syntax
+apptainer run simpson.sif simpson test.in
+```
+
+Note: Unlike Docker/Podman, Singularity/Apptainer automatically mounts the current directory, so you don't need to specify the `-v` flag.
+
+
 ## Building and running the container locally
 
 ```bash
@@ -75,6 +100,23 @@ You can add the script to your PATH to run it from anywhere. For example, you ca
 sudo cp simpson.sh /usr/local/bin/simpson
 ```
 
+
+### Controlling CPU Cores
+
+To limit the number of CPU cores SIMPSON uses, set the `SIMPSON_NUM_CORES` environment variable:
+
+```bash
+# Using Docker
+docker run -e SIMPSON_NUM_CORES=4 -v $(pwd):/workspace jkshenton/simpson simpson test.in
+
+# Using Podman
+podman run -e SIMPSON_NUM_CORES=4 -v $(pwd):/workspace jkshenton/simpson simpson test.in
+
+# Using Singularity/Apptainer
+apptainer run --env SIMPSON_NUM_CORES=4 simpson.sif simpson test.in
+```
+
+Note: This container uses the fork-based parallelization method which works on Linux and macOS systems. MPI-based parallelization is not (yet) included in this container build.
 
 ## Disclaimer
 This repository is not affiliated with the SIMPSON development team. This Docker container is an independent project created to simplify the installation and usage of SIMPSON.
