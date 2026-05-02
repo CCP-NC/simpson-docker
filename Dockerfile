@@ -7,17 +7,18 @@ FROM ubuntu:24.04 AS builder
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    ca-certificates \
-    cmake \
-    git \
-    libfftw3-dev \
-    libgsl-dev \
-    liblapack-dev \
-    libopenblas-dev \
-    tcl8.6-dev \
-    tk8.6-dev \
+RUN set -eux; \
+    dpkg --print-architecture; \
+    uname -m; \
+    apt-get update; \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    build-essential ca-certificates cmake git \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN set -eux; \
+    DEBIAN_FRONTEND=noninteractive apt-get update; \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    libfftw3-dev libgsl-dev liblapack-dev libopenblas-dev tcl8.6-dev tk8.6-dev \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /src
