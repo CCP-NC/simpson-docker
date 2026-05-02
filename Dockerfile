@@ -1,60 +1,57 @@
-FROM ubuntu:24.04
+# SIMPSON NMR Simulation Package
+# Multi-stage build for linux/amd64 and linux/arm64
+# Compatible with Docker, Podman, and buildah
 
-# Avoid prompts from apt
+# ------------------ Stage 1: Build ------------------
+FROM ubuntu:24.04 AS builder
+
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Set shell to bash
-SHELL ["/bin/bash", "-c"]
-
-# Install necessary packages
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
+    ca-certificates \
     cmake \
-    curl \
     git \
+    libfftw3-dev \
     libgsl-dev \
-    wget \
-    bzip2 \
-    tar \
-    && apt-get clean \
+    liblapack-dev \
+    libopenblas-dev \
+    tcl8.6-dev \
+    tk8.6-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Tcl 8.6.12 from source
-RUN cd /tmp && \
-    wget https://prdownloads.sourceforge.net/tcl/tcl8.6.5-src.tar.gz && \
-    tar -xzf tcl8.6.5-src.tar.gz && \
-    cd tcl8.6.5/unix && \
-    ./configure --prefix=/usr/local && \
-    make && \
-    make install && \
-    cd /tmp && \
-    rm -rf tcl8.6.5* && \
-    # Create necessary directories and symbolic links
-    mkdir -p /usr/share/simpson/tcl8.6 /usr/share/tcltk/tcl8.6 && \
-    ln -sf /usr/local/lib/tcl8.6/init.tcl /usr/share/simpson/tcl8.6/ && \
-    ln -sf /usr/local/lib/tcl8.6/init.tcl /usr/share/tcltk/tcl8.6/
+WORKDIR /src
+RUN git clone --depth 1 https://gitlab.au.dk/nmr/simpson.git .
 
-# Set Tcl environment variables
-ENV PATH="/usr/local/bin:${PATH}" \
-    LD_LIBRARY_PATH="/usr/local/lib:${LD_LIBRARY_PATH}" \
-    TCL_LIBRARY="/usr/local/lib/tcl8.6" \
-    TCLLIBPATH="/usr/local/lib/tcl8.6"
+# Build SIMPSON (Release mode, parallel)
+RUN ln -sf /usr/include/tcl8.6 /usr/include/tcl && \
+    cmake -S . -B build -DCMAKE_BUILD_TYPE=Release && \
+    cmake --build build -j$(nproc)
 
-# Download and install SIMPSON 4.2.1
-RUN mkdir -p /opt/simpson && \
-    cd /opt && \
-    wget https://inano.au.dk/fileadmin/user_upload/Simpson_Setup_Linux_4.2.1.tbz2 && \
-    tar -xjf Simpson_Setup_Linux_4.2.1.tbz2 && \
-    DIR=$(tar -tjf Simpson_Setup_Linux_4.2.1.tbz2 | head -1 | cut -f1 -d"/") && \
-    cd "$DIR" && \
-    mkdir -p /usr/local/simpson && \
-    cp -r * /usr/local/simpson/ && \
-    /usr/local/simpson/install.sh && \
-    cd /opt && \
-    rm -rf Simpson_Setup_Linux_4.2.1.tbz2 "$DIR"
+# ------------------ Stage 2: Runtime ------------------
+FROM ubuntu:24.04
 
-# Working directory
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install only runtime libraries
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libfftw3-double3 \
+    libgfortran5 \
+    libgsl27 \
+    liblapack3 \
+    libopenblas0-pthread \
+    tcl8.6 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy compiled binary and example scripts
+COPY --from=builder /src/SIMPSON /usr/local/bin/SIMPSON
+COPY --from=builder /src/examples /usr/share/simpson/examples
+
+# Create lowercase symlink for backward compatibility
+RUN ln -sf /usr/local/bin/SIMPSON /usr/local/bin/simpson && \
+    chmod +x /usr/local/bin/SIMPSON
+
+# Default working directory for input scripts and data
 WORKDIR /workspace
 
-# Command to run when container starts: simpson
-CMD ["simpson"]
+ENTRYPOINT ["simpson"]

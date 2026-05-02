@@ -10,4 +10,4 @@ if [ $# -eq 0 ]; then
 fi
 
 # Execute simpson in the container, mounting current directory to /workspace
-$CONTAINER_ENGINE run --rm -v "$(pwd):/workspace" simpson simpson "$@"
+$CONTAINER_ENGINE run --rm -v "$(pwd):/workspace" simpson "$@"

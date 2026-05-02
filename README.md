@@ -6,6 +6,8 @@ Dockerfile for the Simpson code. This image will be pushed to Docker Hub as jksh
 ## Overview
 This project provides a Docker/Podman container for running the SIMPSON (SIMulation Package for SOlid-state NMR) application without installing it directly on your system.
 
+The image is built directly from the [official SIMPSON GitLab repository](https://gitlab.au.dk/nmr/simpson) using a multi-stage build, producing a small runtime image with no build toolchain. Multi-platform images are published for both **linux/amd64** (Intel/AMD) and **linux/arm64** (Apple Silicon).
+
 
 ## Running the Container
 
@@ -16,10 +18,10 @@ To run the container directly from Docker Hub:
 docker pull jkshenton/simpson
 
 # Using Docker: Run the image directly
-docker run -v $(pwd):/workspace jkshenton/simpson simpson test.in
+docker run -v $(pwd):/workspace jkshenton/simpson test.in
 
 # Using Podman
-podman run -v $(pwd):/workspace jkshenton/simpson simpson test.in
+podman run -v $(pwd):/workspace jkshenton/simpson test.in
 ``` 
 
 ## Instructions for Windows Users
@@ -31,7 +33,7 @@ When using PowerShell, replace $(pwd) with ${PWD} or use an absolute path.
 docker pull jkshenton/simpson
 
 # Run using Docker in PowerShell
-docker run -v ${PWD}:/workspace jkshenton/simpson simpson test.in
+docker run -v ${PWD}:/workspace jkshenton/simpson test.in
 ```
 
 ## Using with Singularity/Apptainer
@@ -50,10 +52,10 @@ apptainer pull simpson.sif docker://jkshenton/simpson
 ### Running with Singularity/Apptainer
 ```bash
 # The current directory is automatically mounted
-singularity run simpson.sif simpson test.in
+singularity run simpson.sif test.in
 
 # Or with newer Apptainer syntax
-apptainer run simpson.sif simpson test.in
+apptainer run simpson.sif test.in
 ```
 
 Note: Unlike Docker/Podman, Singularity/Apptainer automatically mounts the current directory, so you don't need to specify the `-v` flag.
@@ -65,6 +67,9 @@ Note: Unlike Docker/Podman, Singularity/Apptainer automatically mounts the curre
 # Using Docker
 docker build -t simpson .
 
+# Using Docker with explicit platform (e.g. Apple Silicon)
+docker build --platform linux/arm64 -t simpson .
+
 # Using Podman
 podman build -t simpson .
 ```
@@ -74,10 +79,10 @@ podman build -t simpson .
 
 ```bash
 # Using Docker
-docker run -v $(pwd):/workspace simpson simpson test.in
+docker run -v $(pwd):/workspace simpson test.in
 
 # Using Podman
-podman run -v $(pwd):/workspace simpson simpson test.in
+podman run -v $(pwd):/workspace simpson test.in
 
 ```
 
@@ -107,13 +112,22 @@ To limit the number of CPU cores SIMPSON uses, set the `SIMPSON_NUM_CORES` envir
 
 ```bash
 # Using Docker
-docker run -e SIMPSON_NUM_CORES=4 -v $(pwd):/workspace jkshenton/simpson simpson test.in
+docker run -e SIMPSON_NUM_CORES=4 -v $(pwd):/workspace jkshenton/simpson test.in
 
 # Using Podman
-podman run -e SIMPSON_NUM_CORES=4 -v $(pwd):/workspace jkshenton/simpson simpson test.in
+podman run -e SIMPSON_NUM_CORES=4 -v $(pwd):/workspace jkshenton/simpson test.in
 
 # Using Singularity/Apptainer
-apptainer run --env SIMPSON_NUM_CORES=4 simpson.sif simpson test.in
+apptainer run --env SIMPSON_NUM_CORES=4 simpson.sif test.in
+```
+
+### Apple Silicon / ARM64 Support
+
+The published image supports both `linux/amd64` and `linux/arm64`. On Apple Silicon Macs, Docker and Podman will automatically pull the ARM64 variant for native performance:
+
+```bash
+# No extra flags needed on Apple Silicon — the correct architecture is selected automatically
+docker run -v $(pwd):/workspace jkshenton/simpson test.in
 ```
 
 Note: This container uses the fork-based parallelization method which works on Linux and macOS systems. MPI-based parallelization is not (yet) included in this container build.
