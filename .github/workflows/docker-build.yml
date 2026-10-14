@@ -5,8 +5,21 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
-  # Allow manual triggers
+  # Allow manual triggers with optional version override
   workflow_dispatch:
+    inputs:
+      simpson_version:
+        description: 'SIMPSON version tag to build (e.g. 6.1.4)'
+        required: false
+        default: '6.1.4'
+        type: string
+
+env:
+  SIMPSON_VERSION: '6.1.4'
+
+permissions:
+  contents: read
+  packages: write
 
 jobs:
   build:
@@ -14,6 +27,13 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Resolve version
+        id: version
+        run: |
+          RAW_VER="${{ inputs.simpson_version || env.SIMPSON_VERSION }}"
+          CLEAN_VER="${RAW_VER#v}"
+          echo "ver=${CLEAN_VER}" >> "$GITHUB_OUTPUT"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -28,10 +48,19 @@ jobs:
               networkMode = "host"
 
       - name: Login to DockerHub
+        if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Login to GHCR
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push
         uses: docker/build-push-action@v6
@@ -39,8 +68,16 @@ jobs:
           context: .
           platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
+          build-args: |
+            SIMPSON_VERSION=${{ steps.version.outputs.ver }}
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/simpson:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/simpson:${{ steps.version.outputs.ver }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/simpson:v${{ steps.version.outputs.ver }}
             ${{ secrets.DOCKERHUB_USERNAME }}/simpson:${{ github.sha }}
+            ghcr.io/ccp-nc/simpson:latest
+            ghcr.io/ccp-nc/simpson:${{ steps.version.outputs.ver }}
+            ghcr.io/ccp-nc/simpson:v${{ steps.version.outputs.ver }}
+            ghcr.io/ccp-nc/simpson:${{ github.sha }}
           cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/simpson:buildcache
           cache-to: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/simpson:buildcache,mode=max

@@ -21,8 +21,9 @@ RUN set -eux; \
     libfftw3-dev libgsl-dev liblapack-dev libopenblas-dev tcl8.6-dev tk8.6-dev \
     && rm -rf /var/lib/apt/lists/*
 
+ARG SIMPSON_VERSION=6.1.4
 WORKDIR /src
-RUN git clone --depth 1 https://gitlab.au.dk/nmr/simpson.git .
+RUN git clone --depth 1 --branch "v${SIMPSON_VERSION#v}" https://gitlab.au.dk/nmr/simpson.git .
 
 # Build SIMPSON (Release mode, parallel)
 RUN ln -sf /usr/include/tcl8.6 /usr/include/tcl && \
